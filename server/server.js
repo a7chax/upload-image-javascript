@@ -1,9 +1,11 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8999;
+
 
 // Set storage engine
 const storage = multer.diskStorage({
@@ -16,11 +18,11 @@ const storage = multer.diskStorage({
 // Init upload
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1000000 }, // limit file size to 1MB
+  limits: { fileSize: 3 * 1024 * 1024 }, // limit file size to 1MB
   fileFilter: function(req, file, cb) {
     checkFileType(file, cb);
   }
-}).single('image'); // 'image' is the name of the file input field
+}).single('upload'); // 'image' is the name of the file input field
 
 // Check file type
 function checkFileType(file, cb) {
@@ -31,12 +33,16 @@ function checkFileType(file, cb) {
   // Check mime
   const mimetype = filetypes.test(file.mimetype);
 
-  if (mimetype && extname) {
+  if (extname) {
     return cb(null, true);
   } else {
     cb('Error: Images Only!');
   }
 }
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(cors())
 
 // Public folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -45,8 +51,8 @@ app.get('/', (req, res) => res.send('Welcome to the Image Upload API'));
 
 app.post('/upload', (req, res) => {
 
+
   upload(req, res, (err) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
 
     if (err) {
       res.status(400).json({ msg: err });
@@ -55,8 +61,8 @@ app.post('/upload', (req, res) => {
         res.status(400).json({ msg: 'No file selected' });
       } else {
         res.json({
-          msg: 'File uploaded successfully',
-          filePath: `/uploads/${req.file.filename}`
+          uploaded: 'true',
+          url: `https://api.rekat4indonesia.com/uploads/${req.file.filename}`
         });
       }
     }
